@@ -1,0 +1,7 @@
+CREATE SCHEMA IF NOT EXISTS "inventory-service";
+
+CREATE TABLE inventory (
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sku_code VARCHAR2(255 CHAR),
+    quantity NUMBER(10, 0)
+);

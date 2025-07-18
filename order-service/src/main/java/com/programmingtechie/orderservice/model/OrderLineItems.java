@@ -16,7 +16,8 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class OrderLineItems {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "order_line_items_seq_gen")
+    @SequenceGenerator(name = "order_line_items_seq_gen", sequenceName = "t_order_line_items_seq", allocationSize = 1)
     private Long id;
     private String skuCode;
     private BigDecimal price;

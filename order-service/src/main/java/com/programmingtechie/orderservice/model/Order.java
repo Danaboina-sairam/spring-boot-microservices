@@ -16,7 +16,8 @@ import java.util.List;
 @AllArgsConstructor
 public class Order {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "order_seq_gen")
+    @SequenceGenerator(name = "order_seq_gen", sequenceName = "t_orders_seq", allocationSize = 1)
     private Long id;
     private String orderNumber;
     @OneToMany(cascade = CascadeType.ALL)
