@@ -19,6 +19,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -52,12 +53,14 @@ public class OrderService {
                 this.observationRegistry);
         inventoryServiceObservation.lowCardinalityKeyValue("call", "inventory-service");
         return inventoryServiceObservation.observe(() -> {
-            InventoryResponse[] inventoryResponseArray = webClientBuilder.build().get()
+            CompletableFuture<InventoryResponse[]> inventoryResponse = webClientBuilder.build().get()
                     .uri("http://inventory-service/api/inventory",
                             uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
                     .retrieve()
                     .bodyToMono(InventoryResponse[].class)
-                    .block();
+                    .toFuture();
+
+            InventoryResponse[] inventoryResponseArray = inventoryResponse.join();
 
             boolean allProductsInStock = Arrays.stream(inventoryResponseArray)
                     .allMatch(InventoryResponse::isInStock);
