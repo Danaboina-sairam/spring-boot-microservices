@@ -2,48 +2,50 @@
 version: '3.7'
 services:
   ## MySQL Docker Compose Config
-  postgres-order:
-    container_name: postgres-order
-    image: postgres
+  mysql-order-service:
+    container_name: mysql-order-service
+    image: mysql:8.0
     environment:
-      POSTGRES_DB: order-service
-      POSTGRES_USER: ptechie
-      POSTGRES_PASSWORD: password
-      PGDATA: /data/postgres
+      MYSQL_DB: order-service
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
     volumes:
-      - ./postgres-order:/data/postgres
+      - ./mysql-order-service:/var/lib/mysql
     expose:
-      - "5431"
+      - "3307"
     ports:
-      - "5431:5431"
-    command: -p 5431
+      - "3307:3307"
+    command: --port=3307
     restart: always
 
-  postgres-inventory:
-    container_name: postgres-inventory
-    image: postgres
+  mysql-inventory-service:
+    container_name: mysql-inventory-service
+    image: mysql:8.0
     environment:
-      POSTGRES_DB: inventory-service
-      POSTGRES_USER: ptechie
-      POSTGRES_PASSWORD: password
-      PGDATA: /data/postgres
+      MYSQL_DB: inventory-service
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
     volumes:
-      - ./postgres-inventory:/data/postgres
+      - ./mysql-inventory-service:/var/lib/mysql
     ports:
-      - "5432:5432"
+      - "3307:3307"
     restart: always
 
   ## Mongo Docker Compose Config
-  mongo:
-    container_name: mongo
+  mongo-product-service:
+    container_name: mongo-product-service
     image: mongo:4.4.14-rc0-focal
-    restart: always
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongo-product-service:27017/product-service
     ports:
       - "27017:27017"
     expose:
       - "27017"
     volumes:
-      - ./mongo-data:/data/db
+      - ./mongo-product-service-data:/data/db
+    restart: always
 
   ## Keycloak Config with Mysql database
   keycloak-mysql:
@@ -141,7 +143,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
-      - mongo
+      - mongo-product-service
       - discovery-server
       - api-gateway
 
@@ -151,9 +153,9 @@ services:
     image: sairam8276/order-service:latest
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order:5431/order-service
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-order-service:3306/order_service
     depends_on:
-      - postgres-order
+      - mysql-order-service
       - broker
       - zipkin
       - discovery-server
@@ -165,9 +167,9 @@ services:
     image: sairam8276/inventory-service:latest
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory:5432/inventory-service
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-inventory-service:3306/inventory_service
     depends_on:
-      - postgres-inventory
+      - mysql-inventory-service
       - discovery-server
       - api-gateway
 
