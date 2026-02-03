@@ -6,7 +6,7 @@ services:
     container_name: mysql-order-service
     image: mysql:8.0
     environment:
-      MYSQL_DB: order-service
+      MYSQL_DATABASE: order-service
       MYSQL_USER: root
       MYSQL_PASSWORD: root
       MYSQL_ROOT_PASSWORD: root
@@ -18,34 +18,40 @@ services:
       - "3307:3307"
     command: --port=3307
     restart: always
+    networks:
+      - s-network
 
   mysql-inventory-service:
     container_name: mysql-inventory-service
     image: mysql:8.0
     environment:
-      MYSQL_DB: inventory-service
+      MYSQL_DATABASE: inventory-service
       MYSQL_USER: root
       MYSQL_PASSWORD: root
       MYSQL_ROOT_PASSWORD: root
     volumes:
       - ./mysql-inventory-service:/var/lib/mysql
     ports:
-      - "3307:3307"
+      - "3308:3307"
     restart: always
+    networks:
+      - s-network
 
   ## Mongo Docker Compose Config
-  mongo-product-service:
-    container_name: mongo-product-service
-    image: mongo:4.4.14-rc0-focal
-    environment:
-      SPRING_DATA_MONGODB_URI: mongodb://mongo-product-service:27017/product-service
-    ports:
-      - "27017:27017"
-    expose:
-      - "27017"
-    volumes:
-      - ./mongo-product-service-data:/data/db
-    restart: always
+#  mongo-product-service:
+#    container_name: mongo-product-service
+#    image: mongo:4.4.14-rc0-focal
+#    environment:
+#      SPRING_DATA_MONGODB_URI: mongodb://mongo-product-service:27017/product-service
+#    ports:
+#      - "27017:27017"
+#    expose:
+#      - "27017"
+#    volumes:
+#      - ./mongo-product-service-data:/data/db
+#    restart: always
+#    networks:
+#      - s-network
 
   ## Keycloak Config with Mysql database
   keycloak-mysql:
@@ -58,6 +64,8 @@ services:
       MYSQL_DATABASE: keycloak
       MYSQL_USER: keycloak
       MYSQL_PASSWORD: password
+    networks:
+      - s-network
 
   keycloak:
     container_name: keycloak
@@ -77,6 +85,8 @@ services:
       - ./realms/:/opt/keycloak/data/import/
     depends_on:
       - keycloak-mysql
+    networks:
+      - s-network
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.7.7
@@ -86,6 +96,8 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - s-network
 
   broker:
     image: confluentinc/cp-kafka:7.7.7
@@ -102,6 +114,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    networks:
+      - s-network
 
   ## Zipkin
   zipkin:
@@ -109,6 +123,8 @@ services:
     container_name: zipkin
     ports:
       - "9411:9411"
+    networks:
+      - s-network
 
   ## Eureka Server
   discovery-server:
@@ -120,6 +136,8 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
       - zipkin
+    networks:
+      - s-network
 
   api-gateway:
     image: sairam8276/api-gateway:latest
@@ -135,17 +153,21 @@ services:
       - zipkin
       - discovery-server
       - keycloak
+    networks:
+      - s-network
 
   ## Product-Service Docker Compose Config
-  product-service:
-    container_name: product-service
-    image: sairam8276/product-service:latest
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-    depends_on:
-      - mongo-product-service
-      - discovery-server
-      - api-gateway
+#  product-service:
+#    container_name: product-service
+#    image: sairam8276/product-service:latest
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    depends_on:
+#      - mongo-product-service
+#      - discovery-server
+#      - api-gateway
+#    networks:
+#      - s-network
 
   ## Order-Service Docker Compose Config
   order-service:
@@ -160,6 +182,8 @@ services:
       - zipkin
       - discovery-server
       - api-gateway
+    networks:
+      - s-network
 
   ## Inventory-Service Docker Compose Config
   inventory-service:
@@ -172,6 +196,8 @@ services:
       - mysql-inventory-service
       - discovery-server
       - api-gateway
+    networks:
+      - s-network
 
   ## Notification-Service Docker Compose Config
   notification-service:
@@ -184,6 +210,8 @@ services:
       - broker
       - discovery-server
       - api-gateway
+    networks:
+      - s-network
 
   ## Prometheus
   prometheus:
@@ -195,10 +223,12 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
-      - product-service
+#      - product-service
       - inventory-service
       - order-service
       - notification-service
+    networks:
+      - s-network
 
   grafana:
     image: grafana/grafana-oss:8.5.2
@@ -213,3 +243,9 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=password
+    networks:
+      - s-network
+
+networks:
+  s-network:
+    driver: bridge
