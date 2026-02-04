@@ -8,6 +8,8 @@ services:
     environment:
       MYSQL_DATABASE: order-service
       MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Kolkata
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Kolkata"
     volumes:
       - ./mysql-order-service:/var/lib/mysql
     ports:
@@ -22,6 +24,8 @@ services:
     environment:
       MYSQL_DATABASE: inventory-service
       MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Kolkata
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Kolkata"
     volumes:
       - ./mysql-inventory-service:/var/lib/mysql
     ports:
@@ -31,20 +35,22 @@ services:
       - s-network
 
   ## Mongo Docker Compose Config
-#  mongo-product-service:
-#    container_name: mongo-product-service
-#    image: mongo:4.4.14-rc0-focal
-#    environment:
-#      SPRING_DATA_MONGODB_URI: mongodb://mongo-product-service:27017/product-service
-#    ports:
-#      - "27017:27017"
-#    expose:
-#      - "27017"
-#    volumes:
-#      - ./mongo-product-service-data:/data/db
-#    restart: always
-#    networks:
-#      - s-network
+  mongo-product-service:
+    container_name: mongo-product-service
+    image: mongo:4.4.14-rc0-focal
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongo-product-service:27017/product-service
+      TZ: Asia/Kolkata
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Kolkata"
+    ports:
+      - "27017:27017"
+    expose:
+      - "27017"
+    volumes:
+      - ./mongo-product-service-data:/data/db
+    restart: always
+    networks:
+      - s-network
 
   ## Keycloak Config with Mysql database
   keycloak-mysql:
@@ -57,6 +63,8 @@ services:
       MYSQL_DATABASE: keycloak
       MYSQL_USER: keycloak
       MYSQL_PASSWORD: password
+      TZ: Asia/Kolkata
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Kolkata"
     networks:
       - s-network
 
@@ -72,6 +80,8 @@ services:
       DB_PASSWORD: password
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      TZ: Asia/Kolkata
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Kolkata"
     ports:
       - "8080:8080"
     volumes:
@@ -89,6 +99,8 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      TZ: Asia/Kolkata
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Kolkata"
     networks:
       - s-network
 
@@ -107,6 +119,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      TZ: Asia/Kolkata
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Kolkata"
     networks:
       - s-network
 
@@ -127,6 +141,8 @@ services:
       - "8761:8761"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - Asia/Kolkata
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Kolkata
     depends_on:
       - zipkin
     networks:
@@ -142,6 +158,8 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY= TRACE
+      - Asia/Kolkata
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Kolkata
     depends_on:
       - zipkin
       - discovery-server
@@ -150,17 +168,19 @@ services:
       - s-network
 
   ## Product-Service Docker Compose Config
-#  product-service:
-#    container_name: product-service
-#    image: sairam8276/product-service:latest
-#    environment:
-#      - SPRING_PROFILES_ACTIVE=docker
-#    depends_on:
-#      - mongo-product-service
-#      - discovery-server
-#      - api-gateway
-#    networks:
-#      - s-network
+  product-service:
+    container_name: product-service
+    image: sairam8276/product-service:latest
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - Asia/Kolkata
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Kolkata
+    depends_on:
+      - mongo-product-service
+      - discovery-server
+      - api-gateway
+    networks:
+      - s-network
 
   ## Order-Service Docker Compose Config
   order-service:
@@ -169,6 +189,8 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-order-service:3306/order_service
+      - Asia/Kolkata
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Kolkata
     depends_on:
       - mysql-order-service
       - broker
@@ -185,6 +207,8 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-inventory-service:3306/inventory_service
+      - Asia/Kolkata
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Kolkata
     depends_on:
       - mysql-inventory-service
       - discovery-server
@@ -198,6 +222,8 @@ services:
     image: sairam8276/notification-service:latest
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - Asia/Kolkata
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Kolkata
     depends_on:
       - zipkin
       - broker
@@ -216,7 +242,7 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
-#      - product-service
+      - product-service
       - inventory-service
       - order-service
       - notification-service
@@ -236,6 +262,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=password
+      - Asia/Kolkata
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Kolkata
     networks:
       - s-network
 
