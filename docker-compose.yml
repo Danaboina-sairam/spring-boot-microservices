@@ -83,7 +83,7 @@ services:
       TZ: Asia/Kolkata
       JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Kolkata"
     ports:
-      - "8080:8080"
+      - "9191:8080"
     volumes:
       - ./realms/:/opt/keycloak/data/import/
     depends_on:
