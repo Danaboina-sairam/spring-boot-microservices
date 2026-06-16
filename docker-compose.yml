@@ -123,9 +123,9 @@ services:
     container_name: api-gateway
     pull_policy: always
     ports:
-      - "8181:8080"
+      - "9191:8080"
     expose:
-      - "8181"
+      - "9191"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY= TRACE
@@ -155,7 +155,7 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-order:3306/order-service
     depends_on:
-      - postgres-order
+      - mysql-order
       - broker
       - zipkin
       - discovery-server
@@ -170,7 +170,7 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-inventory:3306/inventory-service
     depends_on:
-      - postgres-inventory
+      - mysql-inventory
       - discovery-server
       - api-gateway
 
