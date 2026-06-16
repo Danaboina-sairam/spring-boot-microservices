@@ -2,35 +2,35 @@
 version: '3'
 services:
   ## MySQL Docker Compose Config
-  postgres-order:
-    container_name: postgres-order
-    image: postgres
+  mysql-order:
+    container_name: mysql-order
+    image: mysql
     environment:
-      POSTGRES_DB: order-service
-      POSTGRES_USER: ptechie
-      POSTGRES_PASSWORD: password
-      PGDATA: /data/postgres
+      MYSQL_DATABASE: order-service
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
     volumes:
-      - ./postgres-order:/data/postgres
+      - ./mysql-order:/data/mysql
     expose:
-      - "5431"
+      - "3307"
     ports:
-      - "5431:5431"
+      - "3307:3306"
     command: -p 5431
     restart: unless-stopped
 
-  postgres-inventory:
-    container_name: postgres-inventory
-    image: postgres
+  mysql-inventory:
+    container_name: mysql-inventory
+    image: mysql
     environment:
-      POSTGRES_DB: inventory-service
-      POSTGRES_USER: ptechie
-      POSTGRES_PASSWORD: password
-      PGDATA: /data/postgres
+      MYSQL_DATABASE: inventory-service
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
     volumes:
-      - ./postgres-inventory:/data/postgres
+      - ./mysql-inventory:/data/mysql
     ports:
-      - "5432:5432"
+      - "3308:3306"
     restart: unless-stopped
 
   ## Mongo Docker Compose Config
@@ -54,8 +54,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: keycloak
-      MYSQL_USER: keycloak
-      MYSQL_PASSWORD: password
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
 
   keycloak:
     container_name: keycloak
