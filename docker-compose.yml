@@ -1,49 +1,51 @@
+---
+version: '3'
 services:
-
   ## MySQL Docker Compose Config
-  mysql-order-service:
-    container_name: mysql-order-service
-    image: mysql:8.0
+  postgres-order:
+    container_name: postgres-order
+    image: postgres
     environment:
-      MYSQL_DATABASE: order-service
-      MYSQL_ROOT_PASSWORD: root
-      TZ: Asia/Kolkata
+      POSTGRES_DB: order-service
+      POSTGRES_USER: ptechie
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
     volumes:
-      - ./mysql-order-service:/var/lib/mysql
+      - ./postgres-order:/data/postgres
+    expose:
+      - "5431"
     ports:
-      - "3307:3306"
-    restart: always
-    networks:
-      - s-network
+      - "5431:5431"
+    command: -p 5431
+    restart: unless-stopped
 
-  mysql-inventory-service:
-    container_name: mysql-inventory-service
-    image: mysql:8.0
+  postgres-inventory:
+    container_name: postgres-inventory
+    image: postgres
     environment:
-      MYSQL_DATABASE: inventory-service
-      MYSQL_ROOT_PASSWORD: root
-      TZ: Asia/Kolkata
+      POSTGRES_DB: inventory-service
+      POSTGRES_USER: ptechie
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
     volumes:
-      - ./mysql-inventory-service:/var/lib/mysql
+      - ./postgres-inventory:/data/postgres
     ports:
-      - "3308:3306"
-    restart: always
-    networks:
-      - s-network
+      - "5432:5432"
+    restart: unless-stopped
 
   ## Mongo Docker Compose Config
-  mongo-product-service:
-    container_name: mongo-product-service
+  mongo:
+    container_name: mongo
     image: mongo:4.4.14-rc0-focal
-    volumes:
-      - ./mongo-product-service-data:/data/db
+    restart: unless-stopped
     ports:
       - "27017:27017"
-    restart: always
-    networks:
-      - s-network
+    expose:
+      - "27017"
+    volumes:
+      - ./mongo-data:/data/db
 
-  ## Keycloak Database
+  ## Keycloak Config with Mysql database
   keycloak-mysql:
     container_name: keycloak-mysql
     image: mysql:5.7
@@ -54,208 +56,133 @@ services:
       MYSQL_DATABASE: keycloak
       MYSQL_USER: keycloak
       MYSQL_PASSWORD: password
-    ports:
-      - "3309:3306"
-    networks:
-      - s-network
 
-  ## Keycloak
   keycloak:
     container_name: keycloak
     image: quay.io/keycloak/keycloak:18.0.0
-    command: ["start-dev", "--import-realm"]
+    command: [ "start-dev", "--import-realm" ]
     environment:
       DB_VENDOR: MYSQL
-      DB_ADDR: keycloak-mysql
+      DB_ADDR: mysql
       DB_DATABASE: keycloak
       DB_USER: keycloak
       DB_PASSWORD: password
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     ports:
-      - "9191:8080"
+      - "8080:8080"
     volumes:
       - ./realms/:/opt/keycloak/data/import/
     depends_on:
       - keycloak-mysql
-    networks:
-      - s-network
 
-  #################################################################
-  ## Kafka KRaft (ZooKeeper-Free)
-  #################################################################
-  kafka:
-    image: confluentinc/cp-kafka:7.7.7
-    container_name: kafka
-    hostname: kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
     environment:
-      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
 
-      KAFKA_NODE_ID: 1
-
-      KAFKA_PROCESS_ROLES: broker,controller
-
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
-
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:6062,CONTROLLER://0.0.0.0:29093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:6062
-
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-
-      TZ: Asia/Kolkata
+  broker:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: broker
     ports:
-      - "7072:6062"
-    volumes:
-      - ./kafka-data:/var/lib/kafka/data
-
-    restart: always
-
-    networks:
-      - s-network
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
   ## Zipkin
   zipkin:
     image: openzipkin/zipkin
     container_name: zipkin
     ports:
-      - "9412:9411"
-    networks:
-      - s-network
+      - "9411:9411"
 
   ## Eureka Server
   discovery-server:
-    image: sairam8276/discovery-server:latest
+    image: saiupadhyayula007/discovery-server:latest
     container_name: discovery-server
+    pull_policy: always
+    ports:
+      - "8761:8761"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      - SPRING_PROFILES_ACTIVE=docker
     depends_on:
       - zipkin
-    ports:
-      - "8762:8761"
-    networks:
-      - s-network
 
-  ## API Gateway
   api-gateway:
-    image: sairam8276/api-gateway:latest
+    image: saiupadhyayula007/api-gateway:latest
     container_name: api-gateway
+    pull_policy: always
+    ports:
+      - "8181:8080"
+    expose:
+      - "8181"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: TRACE
+      - SPRING_PROFILES_ACTIVE=docker
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY= TRACE
     depends_on:
       - zipkin
       - discovery-server
       - keycloak
-    ports:
-      - "9090:8080"
-    networks:
-      - s-network
 
-  ## Product Service
+  ## Product-Service Docker Compose Config
   product-service:
     container_name: product-service
-    image: sairam8276/product-service:latest
+    image: saiupadhyayula007/product-service:latest
+    pull_policy: always
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      - SPRING_PROFILES_ACTIVE=docker
     depends_on:
-      - mongo-product-service
+      - mongo
       - discovery-server
       - api-gateway
-    ports:
-      - "9091:8081"
-    networks:
-      - s-network
 
-  ## Order Service
+  ## Order-Service Docker Compose Config
   order-service:
     container_name: order-service
-    image: sairam8276/order-service:latest
+    image: saiupadhyayula007/order-service:latest
+    pull_policy: always
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-order-service:3306/order_service
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order:5431/order-service
     depends_on:
-      - mysql-order-service
-      - kafka
+      - postgres-order
+      - broker
       - zipkin
       - discovery-server
       - api-gateway
-    ports:
-      - "9092:8082"
-    networks:
-      - s-network
 
-  ## Inventory Service
+  ## Inventory-Service Docker Compose Config
   inventory-service:
     container_name: inventory-service
-    image: sairam8276/inventory-service:latest
+    image: saiupadhyayula007/inventory-service:latest
+    pull_policy: always
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-inventory-service:3306/inventory_service
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory:5432/inventory-service
     depends_on:
-      - mysql-inventory-service
+      - postgres-inventory
       - discovery-server
       - api-gateway
-    ports:
-      - "9093:8083"
-    networks:
-      - s-network
 
-  ## Notification Service
+  ## Notification-Service Docker Compose Config
   notification-service:
     container_name: notification-service
-    image: sairam8276/notification-service:latest
+    image: saiupadhyayula007/notification-service:latest
+    pull_policy: always
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      - SPRING_PROFILES_ACTIVE=docker
     depends_on:
-      - kafka
       - zipkin
+      - broker
       - discovery-server
       - api-gateway
-    ports:
-      - "9094:8084"
-    networks:
-      - s-network
-
-  ## Prometheus
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    restart: always
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    depends_on:
-      - product-service
-      - inventory-service
-      - order-service
-      - notification-service
-    ports:
-      - "9095:8085"
-    networks:
-      - s-network
-
-  ## Grafana
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    restart: always
-    volumes:
-      - ./grafana:/var/lib/grafana
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: password
-    depends_on:
-      - prometheus
-    ports:
-      - "9096:8086"
-    networks:
-      - s-network
-
-networks:
-  s-network:
-    driver: bridge
